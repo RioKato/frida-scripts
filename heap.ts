@@ -243,9 +243,7 @@ function dump(mstate: MallocState, tcache: Tcache) {
     }
   }
 
-  if (message.length > 1) {
-    console.log(message.join('\n'))
-  }
+  console.log(message.join('\n'))
 }
 
 function traceHeap() {
