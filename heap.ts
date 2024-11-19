@@ -139,7 +139,7 @@ class MallocState {
 }
 
 function dump(mstate: MallocState, tcache: Tcache) {
-  let message = ''
+  let message = [`top: ${mstate.top()}`]
 
   for (let i = 0; i < 64; i++) {
     let entries = []
@@ -163,7 +163,7 @@ function dump(mstate: MallocState, tcache: Tcache) {
     }
 
     if (entries.length) {
-      message += `tcache[${i}](${tcache.counts(i)}): ${entries.join(' => ')}\n`
+      message.push(`tcache[${i}](${tcache.counts(i)}): ${entries.join(' => ')}`)
     }
   }
 
@@ -189,7 +189,7 @@ function dump(mstate: MallocState, tcache: Tcache) {
     }
 
     if (entries.length) {
-      message += `fastbin[${i}]: ${entries.join(' => ')}\n`
+      message.push(`fastbin[${i}]: ${entries.join(' => ')}`)
     }
   }
 
@@ -215,7 +215,7 @@ function dump(mstate: MallocState, tcache: Tcache) {
     }
 
     if (entries.length) {
-      message += `bins[${i * 2}]: ${entries.join(' => ')}\n`
+      message.push(`bins[${i * 2}]: ${entries.join(' => ')}`)
     }
 
     entries = []
@@ -239,13 +239,12 @@ function dump(mstate: MallocState, tcache: Tcache) {
     }
 
     if (entries.length) {
-      message += `bins[${i * 2 + 1}]: ${entries.join(' => ')}\n`
+      message.push(`bins[${i * 2 + 1}]: ${entries.join(' => ')}`)
     }
   }
 
-  if (message) {
-    message = `top: ${mstate.top()}\n` + message
-    console.log(message)
+  if (message.length > 1) {
+    console.log(message.join('\n'))
   }
 }
 
