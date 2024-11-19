@@ -263,7 +263,7 @@ function traceHeap() {
 
     onLeave(reveal) {
       console.log('==========================================')
-      console.log(`${reveal} = malloc(${this.size})`)
+      console.log(`[*] ${reveal} = malloc(${this.size})`)
       console.log('')
       dump(main_arena, tcache)
     }
@@ -277,7 +277,7 @@ function traceHeap() {
 
     onLeave() {
       console.log('==========================================')
-      console.log(`free(${this.target})`)
+      console.log(`[*] free(${this.target})`)
       console.log('')
       dump(main_arena, tcache)
     }
