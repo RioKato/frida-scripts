@@ -43,7 +43,7 @@ class Chunk {
 
 class TcacheEntry extends Chunk {
   constructor(address: NativePointer) {
-    super(address)
+    super(address.sub(0x10))
   }
 
   next(): TcacheEntry | null {
@@ -128,7 +128,7 @@ class MallocState {
     return this.address.add(0x60).readPointer()
   }
 
-  bins(i: number): Bin | null {
+  bins(i: number): Bin {
     if (i >= 127) {
       throw new RangeError('index out of bounds')
     }
@@ -138,13 +138,148 @@ class MallocState {
   }
 }
 
+function dump(mstate: MallocState, tcache: Tcache) {
+  let message = ''
+
+  for (let i = 0; i < 64; i++) {
+    let entries = []
+    let entry = tcache.entries(i)
+
+    while (entry) {
+      let info = `0x${entry.address.toString(16)}`
+
+      try {
+        info += `:0x${entry.size().toString(16)}`
+      } catch {
+      }
+
+      entries.push(info)
+
+      try {
+        entry = entry.next()
+      } catch {
+        entry = null
+      }
+    }
+
+    if (entries.length) {
+      message += `tcache[${i}](${tcache.counts(i)}): ${entries.join(' => ')}\n`
+    }
+  }
+
+  for (let i = 0; i < 10; i++) {
+    let entries = []
+    let entry = mstate.fastbinY(i)
+
+    while (entry) {
+      let info = `0x${entry.address.toString(16)}`
+
+      try {
+        info += `:0x${entry.size().toString(16)}`
+      } catch {
+      }
+
+      entries.push(info)
+
+      try {
+        entry = entry.next()
+      } catch {
+        entry = null
+      }
+    }
+
+    if (entries.length) {
+      message += `fastbin[${i}]: ${entries.join(' => ')}\n`
+    }
+  }
+
+  for (let i = 0; i < 127; i++) {
+    let entries = []
+    let entry = mstate.bins(i).next()
+
+    while (entry) {
+      let info = `0x${entry.address.toString(16)}`
+
+      try {
+        info += `:0x${entry.size().toString(16)}`
+      } catch {
+      }
+
+      entries.push(info)
+
+      try {
+        entry = entry.next()
+      } catch {
+        entry = null
+      }
+    }
+
+    if (entries.length) {
+      message += `bins[${i * 2}]: ${entries.join(' => ')}\n`
+    }
+
+    entries = []
+    entry = mstate.bins(i).prev()
+
+    while (entry) {
+      let info = `0x${entry.address.toString(16)}`
+
+      try {
+        info += `:0x${entry.size().toString(16)}`
+      } catch {
+      }
+
+      entries.push(info)
+
+      try {
+        entry = entry.prev()
+      } catch {
+        entry = null
+      }
+    }
+
+    if (entries.length) {
+      message += `bins[${i * 2 + 1}]: ${entries.join(' => ')}\n`
+    }
+  }
+
+  if (message) {
+    message = `top: ${mstate.top()}\n` + message
+    console.log(message)
+  }
+}
+
 function traceHeap() {
-  console.log(DebugSymbol.getFunctionByName('malloc'))
-  console.log(DebugSymbol.getFunctionByName('hoo'))
+  const libc = getLibcModule()
+  const heap = getHeapRange()
+  const main_arena = new MallocState(libc.base.add(0x1e7ac0))
+  const tcache = new Tcache(heap.base.add(0x10))
 
   Interceptor.attach(DebugSymbol.getFunctionByName('malloc'), {
     onEnter() {
-      DebugSymbol.getFunctionByName('hoo')
+      const context = this.context as X64CpuContext
+      this.size = context.rdi
+    },
+
+    onLeave(reveal) {
+      console.log('==========================================')
+      console.log(`${reveal} = malloc(${this.size})`)
+      console.log('')
+      dump(main_arena, tcache)
+    }
+  })
+
+  Interceptor.attach(DebugSymbol.getFunctionByName('free'), {
+    onEnter() {
+      const context = this.context as X64CpuContext
+      this.target = context.rdi
+    },
+
+    onLeave() {
+      console.log('==========================================')
+      console.log(`free(${this.target})`)
+      console.log('')
+      dump(main_arena, tcache)
     }
   })
 }
