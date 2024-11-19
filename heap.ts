@@ -61,7 +61,7 @@ class Tcache {
 
   counts(i: number): number {
     if (i >= 64) {
-      throw new Error('index out of bounds')
+      throw new RangeError('index out of bounds')
     }
 
     return this.address.add(2 * i).readU16()
@@ -69,7 +69,7 @@ class Tcache {
 
   entries(i: number): TcacheEntry | null {
     if (i >= 64) {
-      throw new Error('index out of bounds')
+      throw new RangeError('index out of bounds')
     }
 
     const next = this.address.add(0x80 + 8 * i).readPointer()
@@ -117,7 +117,7 @@ class MallocState {
 
   fastbinY(i: number): Fastbin | null {
     if (i >= 10) {
-      throw new Error('index out of bounds')
+      throw new RangeError('index out of bounds')
     }
 
     const next = this.address.add(0x10 + 8 * i).readPointer()
@@ -130,7 +130,7 @@ class MallocState {
 
   bins(i: number): Bin | null {
     if (i >= 127) {
-      throw new Error('index out of bounds')
+      throw new RangeError('index out of bounds')
     }
 
     const head = this.address.add(0x70 + 8 * 2 * i - 0x10)
