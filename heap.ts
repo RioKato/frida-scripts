@@ -1,3 +1,6 @@
+const MAIN_ARENA_OFS: number = 0x21ac80
+const TCACHE_OFS: number = 0x10
+
 function getHeapRange(): RangeDetails {
   const sbrk = DebugSymbol.getFunctionByName('sbrk')
   const sbrkfn = new NativeFunction(sbrk, 'pointer', ['pointer'])
@@ -249,8 +252,8 @@ function dump(mstate: MallocState, tcache: Tcache) {
 function traceHeap() {
   const libc = getLibcModule()
   const heap = getHeapRange()
-  const main_arena = new MallocState(libc.base.add(0x1e7ac0))
-  const tcache = new Tcache(heap.base.add(0x10))
+  const main_arena = new MallocState(libc.base.add(MAIN_ARENA_OFS))
+  const tcache = new Tcache(heap.base.add(TCACHE_OFS))
 
   Interceptor.attach(DebugSymbol.getFunctionByName('malloc'), {
     onEnter() {
